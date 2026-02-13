@@ -84,12 +84,22 @@ namespace FuryOfTheBallin.Helpers
             if (prefab == null)
             {
                 prefab = UnityEngine.GameObject.Instantiate(SharedData.marmu);
+                prefab.layer = (int)PhysLayers.HERO_ATTACK;
+                Satchel.GameObjectUtils.RemoveComponent<DamageHero>(prefab);
+                Satchel.GameObjectUtils.RemoveComponent<HealthManager>(prefab);
+                Satchel.GameObjectUtils.RemoveComponent<ExtraDamageable>(prefab);
+                prefab.AddComponent<BallinDamage>();
+                GameObject hitIdle = Satchel.GameObjectUtils.Find(prefab, "Hit Idle");
+                Satchel.GameObjectUtils.RemoveComponent<DamageHero>(hitIdle);
+                GameObject hitRoll = Satchel.GameObjectUtils.Find(prefab, "Hit Roll");
+                Satchel.GameObjectUtils.RemoveComponent<DamageHero>(hitRoll);
                 prefab.name = "FuryOfTheBallin.Marmu";
                 prefab.SetActive(false);
                 UnityEngine.GameObject.DontDestroyOnLoad(prefab);
             }
 
             On.HeroController.Update += SpawnMarmu;
+            On.HealthManager.Hit += MarmuBlock;
         }
 
         /// <summary>
@@ -98,6 +108,7 @@ namespace FuryOfTheBallin.Helpers
         public override void Unequip()
         {
             On.HeroController.Update -= SpawnMarmu;
+            On.HealthManager.Hit -= MarmuBlock;
             if (clone != null)
             {
                 UnityEngine.Object.Destroy(clone);
@@ -126,10 +137,46 @@ namespace FuryOfTheBallin.Helpers
                 PlayerData.instance.healthBlue == 0 &&
                 clone == null)
             {
+                timer.Restart();
                 clone = UnityEngine.GameObject.Instantiate(prefab, HeroController.instance.transform.position, Quaternion.identity);
                 clone.SetActive(true);
-                timer.Restart();
             }
+        }
+
+        /// <summary>
+        /// Some enemies don't trigger Marmu's block, so she can one-shot certain bosses.
+        /// 
+        /// Now, if an enemy takes damage from Marmu, they will get a temporary component that renders them
+        /// immune to her damage.
+        /// </summary>
+        /// <param name="orig"></param>
+        /// <param name="self"></param>
+        /// <param name="hitInstance"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        private void MarmuBlock(On.HealthManager.orig_Hit orig, HealthManager self, HitInstance hitInstance)
+        {
+            if (hitInstance.Source.name.StartsWith("FuryOfTheBallin.Marmu"))
+            {
+                GameObject enemy = self.gameObject;
+                MarmuShield marmuShield = enemy.GetComponent<MarmuShield>();
+                if (marmuShield == default)
+                {
+                    marmuShield = enemy.AddComponent<MarmuShield>();
+                }
+                else
+                {
+                    if (marmuShield.timer.ElapsedMilliseconds < 1000)
+                    {
+                        hitInstance.DamageDealt = 0;
+                    }
+                    else
+                    {
+                        marmuShield.timer.Restart();
+                    }
+                }
+            }
+
+            orig(self, hitInstance);
         }
         #endregion
     }

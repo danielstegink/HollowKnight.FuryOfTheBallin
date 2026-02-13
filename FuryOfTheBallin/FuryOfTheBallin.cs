@@ -12,7 +12,7 @@ namespace FuryOfTheBallin
     {
         internal static FuryOfTheBallin Instance;
 
-        public override string GetVersion() => "1.0.0.0";
+        public override string GetVersion() => "1.0.1.0";
 
         #region Save Data
         public void OnLoadLocal(LocalSaveData s)
@@ -51,18 +51,8 @@ namespace FuryOfTheBallin
             Instance = this;
             SharedData.customCharm = new CustomCharm();
 
-            GameObject marmu = preloadedObjects["Fungus3_40_boss"]["Warrior/Ghost Warrior Marmu"];
-            marmu.layer = (int)PhysLayers.HERO_ATTACK;
-            Satchel.GameObjectUtils.RemoveComponent<DamageHero>(marmu);
-            Satchel.GameObjectUtils.RemoveComponent<HealthManager>(marmu);
-            Satchel.GameObjectUtils.RemoveComponent<ExtraDamageable>(marmu);
-            marmu.AddComponent<BallinDamage>();
-            marmu.SetActive(false);
-            GameObject hitIdle = marmu.Find("Hit Idle");
-            Satchel.GameObjectUtils.RemoveComponent<DamageHero>(hitIdle);
-            GameObject hitRoll = marmu.Find("Hit Roll");
-            Satchel.GameObjectUtils.RemoveComponent<DamageHero>(hitRoll);
-            SharedData.marmu = marmu;
+            SharedData.marmu = preloadedObjects["Fungus3_40_boss"]["Warrior/Ghost Warrior Marmu"];
+            SharedData.marmu.SetActive(false);
 
             On.HeroController.Update += OnUpdate;
             Log("Initialized");
